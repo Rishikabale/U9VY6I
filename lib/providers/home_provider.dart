@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,10 +5,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widget_type.dart';
 
-
 class HomeState {
   final List<WidgetType> widgets;
-  final String text; 
+  final String text;
   final XFile? pickedImg;
   final String? savedText;
   final String? savedImgUrl;
@@ -26,17 +24,16 @@ class HomeState {
     this.error,
   });
 
- 
   HomeState copyWith({
     List<WidgetType>? widgets,
     String? text,
     XFile? pickedImg,
-    bool clearPickedImg = false, 
+    bool clearPickedImg = false,
     String? savedText,
     String? savedImgUrl,
     bool? isBusy,
     String? error,
-    bool clearError = false, 
+    bool clearError = false,
   }) {
     return HomeState(
       widgets: widgets ?? this.widgets,
@@ -50,42 +47,25 @@ class HomeState {
   }
 }
 
-
 class HomeNotifier extends StateNotifier<HomeState> {
- 
   final ImagePicker _imgPicker = ImagePicker();
 
   HomeNotifier() : super(HomeState());
 
- 
-
   void addWidgets(List<WidgetType> widgetsToAdd) {
-    state = state.copyWith(widgets: List.from(widgetsToAdd));
+    // Clears the error when new widgets are added, per prototype logic
+    state = state.copyWith(
+      widgets: List.from(widgetsToAdd),
+      clearError: true,
+    );
   }
 
- 
   void updateText(String newText) {
     state = state.copyWith(text: newText);
   }
 
-
-  void deleteWidget(int index) {
-    final removedType = state.widgets[index];
-    final newWidgets = List<WidgetType>.from(state.widgets)..removeAt(index);
-
-    
-    if (removedType == WidgetType.textbox) {
-      state = state.copyWith(widgets: newWidgets, text: '', savedText: null);
-    } else if (removedType == WidgetType.imagebox) {
-      state = state.copyWith(
-        widgets: newWidgets,
-        clearPickedImg: true,
-        savedImgUrl: null,
-      );
-    } else {
-      state = state.copyWith(widgets: newWidgets);
-    }
-  }
+  // Removed deleteWidget as it's not in the prototype
+  // (You can add it back, but it wasn't in the video)
 
   Future<void> grabImage(ImageSource source) async {
     try {
@@ -102,13 +82,12 @@ class HomeNotifier extends StateNotifier<HomeState> {
     state = state.copyWith(clearError: true);
   }
 
- 
   Future<bool> doSave() async {
     bool hasSomething = state.widgets.contains(WidgetType.textbox) ||
         state.widgets.contains(WidgetType.imagebox);
 
     if (!hasSomething) {
-      state = state.copyWith(error: 'Add at least one widget before saving.');
+      state = state.copyWith(error: 'Add at-least a widget to save.');
       return false;
     }
 
@@ -140,12 +119,11 @@ class HomeNotifier extends StateNotifier<HomeState> {
       );
       return true;
     } catch (err) {
-      state = state.copyWith(isBusy: false, error: 'Something went wrong: $err');
+      state = state.copyWith(isBusy: false, error: 'Failed to save data: $err');
       return false;
     }
   }
 }
-
 
 final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
   return HomeNotifier();
